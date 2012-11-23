@@ -34,13 +34,13 @@
 
 //For testing
 int seconds = 0;
-int minutes = 32;
-int hours = 3;
+int minutes = 0;
+int hours = 0;
 int pm = true;
 int update_the_time = false;
 int button_pressed = false;
+int housekeeping = true;
 
-int EIOpin = 15;     // Input/output pin for chip selection
 int XCKpin = 16;     // Clock input pin for taking display data
 int LATCHpin = 17;   // Latch pulse input pin for display data
 int SLEEPBpin = 18;  // Sleep Pin for the display
@@ -50,7 +50,7 @@ int VCCpin = 6;      // Vcc of the display
 
 int theButton = 2;
 
-ePaper epaper = ePaper(EIOpin, XCKpin, LATCHpin, SLEEPBpin, DI0pin, ENpin, VCCpin);
+ePaper epaper = ePaper(XCKpin, LATCHpin, SLEEPBpin, DI0pin, ENpin, VCCpin);
 
 //The very important 32.686kHz interrupt handler
 ISR(TIMER2_OVF_vect){
@@ -121,7 +121,7 @@ void loop() {
   
   sleep_mode(); //Stop everything and go to sleep. Wake up if the Timer2 buffer overflows or if you hit the button
 
-  if(update_the_time == true) {
+  if(update_the_time) {
 
     Serial.print(hours, DEC);
     Serial.print(":");
@@ -145,10 +145,17 @@ void loop() {
 
 void updateTime() {
   //Update the minutes and hours variables
-  update_the_time = seconds / 60;
-  minutes += update_the_time; //Example: seconds = 2317, minutes = 58 + 38 = 96
+  int increment;
+  increment = seconds / 60;
+  update_the_time = !!(increment);
+  
+  minutes += increment; //Example: seconds = 2317, minutes = 58 + 38 = 96
   seconds %= 60; //seconds = 37
-  hours += minutes / 60; //12 + (96 / 60) = 13
+  
+  increment = minutes / 60;
+  housekeeping = housekeeping || !!(increment);
+  
+  hours += increment; //12 + (96 / 60) = 13
   minutes %= 60; //minutes = 36
 
   //In 12 hour mode, hours go from 12 to 1 to 12.
@@ -161,11 +168,16 @@ void updateTime() {
 void showTime() {
   char strtime[11];
   const char *meridian = pm ? "pm" : "am";
-  snprintf(strtime, 11, "%02d %02d %s", hours, minutes, meridian);
+  snprintf(strtime, 11, "%02d %02d %s         ", hours, minutes, meridian);
   //Serial.println(strtime);
-  epaper.writeTop(strtime);
-  epaper.writeNumberBottom(seconds);
-  epaper.writeDisplay();
+  if(housekeeping) {
+    epaper.completeData(strtime, "          ");
+    epaper.write757(true, 1);
+    housekeeping = false;
+  } else {
+    epaper.incrementalData(strtime, "          ");
+    epaper.write757(false, 1);
+  }
 }
 
 //This routine occurs when you hold the button down
@@ -173,24 +185,17 @@ void showTime() {
 //Holding the button down will increase the time (accelerates)
 //Releasing the button for more than 2 seconds will exit this mode
 void setTime(void) {
-  Serial.println("started updating time");
-  delay(100);
-  cli(); //We don't want the interrupt changing values at the same time we are!
+  int increments[] = {1,1,1,1,1,5,5,5,10,10,10,10};
+  int i;
+  for(i=0; i<12 && digitalRead(theButton) == LOW; i++) {
+    minutes += increments[i];
+    updateTime();
+    showTime();
+  }
 
   while(digitalRead(theButton) == LOW) {
-    Serial.println("updating time");
-    delay(100);
-
-    //Update the minutes and hours variables
+    hours += 1;
     updateTime();
-
     showTime();
-
-    //Start advancing on the tens digit. Floor the single minute digit.
-    minutes /= 10; //minutes = 46 / 10 = 4
-    minutes *= 10; //minutes = 4 * 10 = 40
-    minutes += 10;  //minutes = 40 + 10 = 50
   }
-  
-  sei(); //Resume interrupts
 }
