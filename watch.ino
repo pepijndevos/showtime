@@ -87,11 +87,13 @@ void setup() {
   DIDR0 = 0x3F; //Disable digital input buffers on all ADC0-ADC5 pins
   DIDR1 = (1<<AIN1D)|(1<<AIN0D); //Disable digital input buffer on AIN1/0
   
-  power_twi_disable();
-  power_spi_disable();
-  //power_usart0_disable();
+
+  power_adc_disable()
+  power_spi_disable()
+  power_usart0_disable()
+  power_timer1_disable()
+  power_twi_disable()
   //power_timer0_disable(); //Needed for delay_ms
-  power_timer1_disable();
   //power_timer2_disable(); //Needed for asynchronous 32kHz operation
 
   //Setup TIMER2
@@ -109,9 +111,9 @@ void setup() {
   //CLKPR = (1<<CLKPCE); //Enable clock writing
   //CLKPR = (1<<CLKPS3); //Divid the system clock by 256
 
-  Serial.begin(9600);  
-  Serial.println("32kHz Testing:");
-  delay(100);
+  //Serial.begin(9600);  
+  //Serial.println("32kHz Testing:");
+  //delay(100);
 
   sei(); //Enable global interrupts
   //pinMode(13, OUTPUT);
@@ -123,19 +125,19 @@ void loop() {
 
   if(update_the_time) {
 
-    Serial.print(hours, DEC);
+    /*Serial.print(hours, DEC);
     Serial.print(":");
     Serial.print(minutes, DEC);
     Serial.print(":");
-    Serial.println(seconds, DEC);
+    Serial.println(seconds, DEC);*/
 
     showTime(); //Show the current time
 
     //If you are STILL holding the button, then you must want to adjust the time
     if(button_pressed && digitalRead(theButton) == LOW) setTime();
     
-    Serial.println("not updating time");
-    delay(100);
+    //Serial.println("not updating time");
+    //delay(100);
 
     update_the_time = false; //Reset the button variable
     button_pressed = false;
