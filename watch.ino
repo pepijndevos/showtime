@@ -88,11 +88,11 @@ void setup() {
   DIDR1 = (1<<AIN1D)|(1<<AIN0D); //Disable digital input buffer on AIN1/0
   
 
-  power_adc_disable()
-  power_spi_disable()
-  power_usart0_disable()
-  power_timer1_disable()
-  power_twi_disable()
+  power_adc_disable();
+  power_spi_disable();
+  power_usart0_disable();
+  power_timer1_disable();
+  power_twi_disable();
   //power_timer0_disable(); //Needed for delay_ms
   //power_timer2_disable(); //Needed for asynchronous 32kHz operation
 
